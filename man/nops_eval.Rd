@@ -1,0 +1,264 @@
+\name{nops_eval}
+\alias{nops_eval}
+\alias{nops_eval_write}
+
+\title{Evaluate NOPS Exams}
+
+\description{
+  Evaluate NOPS exams produced with \code{\link[exams]{exams2nops}},
+  and scanned by \code{\link[exams]{nops_scan}}.
+}
+
+\usage{
+  nops_eval(register = dir(pattern = "\\\\.csv$"), solutions = dir(pattern = "\\\\.rds$"),
+    scans = dir(pattern = "^nops_scan_[[:digit:]]*\\\\.zip$"),
+    points = NULL, eval = exams_eval(partial = TRUE, negative = FALSE, rule = "false2"),
+    mark = c(0.5, 0.6, 0.75, 0.85), labels = NULL,
+    dir = ".", results = "nops_eval", file = NULL, flavor = NULL,
+    language = "en", interactive = TRUE,
+    string_scans = dir(pattern = "^nops_string_scan_[[:digit:]]*\\\\.zip$"),
+    string_points = seq(0, 1, 0.25),
+    \dots)
+
+  nops_eval_write(results = "nops_eval.csv", file = "exam_eval",
+    dir = ".", language = "en", converter = NULL,
+    col = hcl(c(0, 0, 60, 120), c(70, 0, 70, 70), 90), encoding = "UTF-8",
+    html = NULL)
+}
+
+\arguments{
+  \item{register}{character. File name of a CSV file (semicolon-separated)
+    of the registered students. Must contain columns \code{"registration"}
+    (registration number), \code{"name"} (student name), \code{"id"} (some user name
+    or other string unique for each student). The file name should not contain spaces,
+    umlaut or other special characters (e.g., something like
+    \code{"exam-2015-07-01.csv"} is recommended).}
+  \item{solutions}{character. File name of the RDS exam file
+    produced by \code{\link[exams]{exams2nops}}.}
+  \item{scans}{character. File name of the ZIP file with scanning results
+    (containing Daten.txt and PNG files) as produced by
+    \code{\link[exams]{nops_scan}}.}
+  \item{points}{numeric. Vector of points per exercise. By default read from
+    \code{solutions}.}
+  \item{eval}{list specification of evaluation policy as computed by
+    \code{\link[exams]{exams_eval}}.}
+  \item{mark}{logical or numeric. If \code{mark = FALSE}, no marks (or grades) are computed.
+    Otherwise \code{mark} needs to be a numeric vector with threshold values to
+    compute marks. The thresholds can either be relative (all lower than 1)
+    or absolute. In case results exactly matching a threshold, the better mark/grade is used.}
+  \item{labels}{character. Vector of labels for the marks/grades with
+    \code{length(mark) + 1} elements. Default is \code{(length(mark) + 1):1}.}
+  \item{dir}{character. File path to the output directory (the default being the
+    current working directory).}
+  \item{results}{character. Prefix for output files.}
+  \item{file}{character. File name for individual report files, in the default
+    \code{nops_eval_write} the same as \code{register} with suffix \code{.html}.}
+  \item{flavor}{character. Rather than using the default \code{nops_eval_write}
+    it is possible to call \code{nops_eval_write_<flavor>}. Currently, only
+    the default writer is available but other formats are planned (e.g., Moodle).}
+  \item{language}{character. Path to a DCF file with a language specification.
+    Currently, the package ships with a number of languages such es English (\code{"en"}),
+    Spanish (\code{"es"}), etc. See below for further details.}
+  \item{interactive}{logical. Should possible errors in the Daten.txt file
+    by corrected interactively? Requires the \pkg{png} package for full
+    interactivity.}
+  \item{string_scans}{character. Optional file name of the ZIP file with scanning results
+    of string exercise sheets (if any) containing Daten2.txt and PNG files as produced
+    by \code{\link[exams]{nops_scan}}.}
+  \item{string_points}{numeric. Vector of length 5 with points assigned
+    to string results, multiplied with the \code{points} for the corresponding
+    exercises.}
+  \item{\dots}{further optional arguments passed from \code{nops_eval} to
+    \code{nops_eval_write} (or any other \code{nops_eval_write_<flavor>}).}
+  \item{converter}{character. The HTML converter to be used for the \code{language}
+    text elements. Can be \code{"none"}, \code{"tth"}, or \code{"pandoc"}.}
+  \item{col}{character. Hex color codes used for exercises with
+    negative, neutral, positive, full solution.}
+  \item{encoding}{character. Encoding of \code{register}, e.g.,
+    \code{"latin1"} or \code{"UTF-8"} (default).}
+  \item{html}{character. Alternative specifciation of the \code{file} name for the
+    individual HTML report files. As \code{html} was used rather than \code{file}
+    in earlier versions of the package, \code{html} is preserved as an argument
+    and overwrites \code{file} if specified.}
+}
+
+\details{
+  \code{nops_eval} is a companion function for \code{\link[exams]{exams2nops}},
+  \code{\link[exams]{nops_scan}}, and \code{\link[exams]{nops_fix}}. It evaluates
+  the scanned exams by computing the sums of the points achived and (if desired) maps
+  them to marks/grades. Furthermore, a HTML report for each individual student is
+  generated by default (e.g., for upload into a learning management system).
+
+  Tutorial for NOPS workflow: \url{https://www.R-exams.org/tutorials/exams2nops/}
+  and \url{https://www.R-exams.org/tutorials/nops_language/} for the language
+  support.
+
+  The grading is controlled by the arguments \code{mark} and \code{labels} with
+  defaults \code{mark = c(0.5, 0.6, 0.75, 0.85)} and \code{labels = 5:1}. These
+  correspond to the following grading scheme:
+  \itemize{
+  \item Grade 5 for [0, 50) percent of the points.
+  \item Grade 4 for [50, 60) percent.
+  \item Grade 3 for [60, 75) percent.
+  \item Grade 2 for [75, 85) percent.
+  \item Grade 1 for [85, 100] percent.
+  }
+
+  By choosing different \code{mark} thresholds and/or different \code{labels} other
+  grading schemes can be implemented. And with \code{mark = FALSE} the grading is
+  switched off and only the points are reported.
+}
+
+\value{
+  A \code{data.frame} with the detailed exam results is returned invisibly.
+  It is also written to a CSV file in the current directory, by default along with
+  a ZIP file containing HTML reports.
+}
+
+\seealso{\code{\link[exams]{exams2nops}}, \code{\link[exams]{nops_scan}}, \code{\link[exams]{nops_fix}}}
+
+\examples{
+\donttest{
+## --- Preliminaries ---
+
+## load package and enforce par(ask = FALSE)
+## additionally, for simplicity, enforce using the basic
+## tools::texi2dvi() LaTeX interface instead of the more
+## flexible/robust tinytex::latexmk()
+library("exams")
+oopt <- options(device.ask.default = FALSE, exams_tex = "tools")
+
+## set up a temporary working directory in which all files are managed
+odir <- getwd()
+dir.create(mydir <- tempfile())
+setwd(mydir)
+
+
+## --- Step 1 ---
+## exam generation
+
+## define an exam (= list of exercises)
+myexam <- list(
+  "tstat2.Rmd",
+  "ttest.Rmd",
+  "relfreq.Rmd",
+  "anova.Rmd",
+  c("boxplots.Rmd", "scatterplot.Rmd"),
+  "cholesky.Rmd"
+)
+
+## create multiple exams on the disk with different numbers of points
+## per exercise (see ?exams2nops for more examples)
+set.seed(403)
+ex1 <- exams2nops(myexam, n = 2, dir = ".", date = "2015-07-29",
+  points = c(1, 1, 1, 2, 2, 3), showpoints = TRUE)
+dir()
+
+## assume the PDF exams were already printed (and possibly backed up
+## in a different directory) so that they are not needed anymore
+file.remove(dir(pattern = "pdf$"))
+
+
+## --- Step 2 ---
+## scan results
+
+## assume two participants filled out the printed exam sheets
+## and the corresponding scans are in two PNG files,
+img <- dir(system.file("nops", package = "exams"), pattern = "nops_scan",
+  full.names = TRUE)
+
+## copy the PNG files to the working directory
+file.copy(img, to = ".")
+
+## read the scanned images (all locally available .png files) and collect
+## results in a ZIP archive (see ?nops_scan for more details)
+nops_scan()
+dir()
+
+## the ZIP archive contains copies of the PNG images so that these are
+## can be deleted here (possibly after backup in a different directory)
+file.remove(dir(pattern = "png$"))
+
+
+## -- Step 3 ---
+## evaluate results
+
+## three files are required: (a) an RDS file with the exam meta-information
+## (see Step 1), (b) a ZIP file with the scanned sheets (see Step 2), (c) a
+## CSV file with the student infomation (registration number, name, and some
+## for of ID/username)
+
+## here we create the CSV file on the fly but in practice this will typically
+## be processed from some registration service or learning management system etc
+write.table(data.frame(
+  registration = c("1501090", "9901071"),
+  name = c("Jane Doe", "Ambi Dexter"),
+  id = c("jane_doe", "ambi_dexter")
+), file = "Exam-2015-07-29.csv", sep = ";", quote = FALSE, row.names = FALSE)
+dir()
+## now the exam can be evaluated creating an output data frame (also stored
+## as CSV file) and individual HTML reports (stored in a ZIP file),
+
+## as there is only exactly on CSV/RDS/ZIP file in the current directory,
+## these are found automatically - furthermore an evaluation scheme without
+## partial points and differing points per exercise are used
+ev1 <- nops_eval(eval = exams_eval(partial = FALSE, negative = FALSE))
+dir()
+
+## inspect evaluated data
+ev1
+
+## inspect corresponding HTML reports
+if(interactive()) {
+unzip("nops_eval.zip")
+browseURL(file.path(mydir, "jane_doe",    "Exam-2015-07-29.html"))
+browseURL(file.path(mydir, "ambi_dexter", "Exam-2015-07-29.html"))
+}
+
+## --- Options ---
+if(interactive()) {
+## below three typically needed options are discussed:
+## (a) using a different evaluation strategy (here with partial credits),
+## (b) using a different language (here de/German),
+## (c) an error of the participant when filling in the registration number.
+
+## as for (a): partial credits should only be used for multiple-choice questions
+## where at least one alternative is correct and at least one is false
+## [note that in this example this is not the case for the first question
+## (single-choice) and the third question for Jane Doe (no alternative correct)]
+
+## as for (c): for Ambi Dexter such an error was included in the PNG example
+## image, the actual number is "9911071" but the crosses indicate "9901071"
+
+## clean up previous evaluation
+file.remove(c("nops_eval.csv", "nops_eval.zip"))
+
+## write correct registration information
+write.table(data.frame(
+  registration = c("1501090", "9911071"),
+  name = c("Jane Doe", "Ambi Dexter"),
+  id = c("jane_doe", "ambi_dexter")
+), file = "Exam-2015-07-29.csv", sep = ";", quote = FALSE, row.names = FALSE)
+
+## call nops_eval() with modified options, where the error in the registration
+## number of Ambi Dexter will trigger an interactive prompt
+ev2 <- nops_eval(eval = exams_eval(partial = TRUE, rule = "false2"),
+  language = "de")
+
+## inspect evaluated data
+ev2
+cbind(ev1$points, ev2$points)
+
+## inspect corresponding HTML reports
+unzip("nops_eval.zip")
+browseURL(file.path(mydir, "jane_doe",    "Exam-2015-07-29.html"))
+browseURL(file.path(mydir, "ambi_dexter", "Exam-2015-07-29.html"))
+}
+
+## switch back to original working directory and options
+setwd(odir)
+options(exams_tex = oopt$exams_tex)
+}
+}
+
+\keyword{utilities}

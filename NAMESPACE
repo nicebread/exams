@@ -1,0 +1,155 @@
+importFrom("tools",
+  "file_ext", "file_path_sans_ext", "file_path_as_absolute", "texi2dvi")
+importFrom("utils",
+  "Sweave", "toLatex",
+  "compareVersion", "packageVersion", "head", "tail",
+  "read.table", "read.csv2", "write.table", "unzip", "zip", "browseURL",
+  "combn")
+
+importFrom("stats",
+  "dist", "median", "na.omit", "quantile", "runif",
+  "as.formula", "complete.cases", "setNames")
+importFrom("graphics",
+  "abline", "barplot", "hist", "par", "plot", "rect", "spineplot", "text",
+  "axis", "mtext")
+importFrom("grDevices",
+  "gray", "hcl", "svg")
+
+importFrom("base64enc",
+  "base64decode", "base64encode", "dataURI")
+importFrom("knitr",
+  "knit", "opts_chunk", "opts_hooks", "render_sweave")
+importFrom("rmarkdown",
+  "pandoc_available", "pandoc_convert")
+
+export(
+  ## outdated version 1 interface
+  "exams",
+
+  ## formatters
+  "mchoice2string",
+  "string2mchoice",
+  "mchoice2text",
+  "answerlist",
+  "round2",
+  "fmt",
+  "char_with_braces",
+  "num2tol",
+  "num_to_tol",
+  "expar",
+
+  ## mchoice/schoice generators
+  "num2schoice",
+  "num_to_schoice",
+  "det2schoice",
+  "det_to_schoice",
+  "matrix2schoice",
+  "matrix_to_schoice",
+  "matrix2mchoice",
+  "matrix_to_mchoice",
+
+  ## version 2 extensible interface
+  "xexams",
+  "xweave",
+  "exams_metainfo",
+  "exams_eval",
+  "exams_skeleton",
+  "exams.skeleton",
+
+  ## exercise reader and helper functions
+  "read_exercise",
+  "read_metainfo",
+  "extract_command",
+  "extract_extra",
+  "extract_environment",
+  "extract_items",
+  "include_supplement",
+  "include_tikz",
+  "match_exams_call",
+  "match_exams_device",
+  "match_exams_iteration",
+
+  ## stress testing,
+  "stresstest_exercise",
+
+  ## LaTeX to image converter (via ImageMagick's convert)
+  "tex2image",
+
+  ## modular PDF driver
+  "exams2pdf",
+  "make_exams_write_pdf",
+
+  ## HTML driver
+  "exams2html",
+  "make_exercise_transform_html",
+  "make_exercise_transform_pandoc",
+  "make_exams_write_html",
+
+  ## IMS QTI drivers
+  "exams2qti12",
+  "make_itembody_qti12",
+  "exams2qti21",
+  "make_itembody_qti21",
+  "exams2openolat",
+  "openolat_config",
+  "exams2canvas",
+  "exams2ilias",
+  "exams2ans",
+  ## "exams2inspera",
+
+  ## Blackboard driver (only partially QTI-based)
+  "exams2blackboard",
+  "make_itembody_blackboard",
+
+  ## WU exam server driver (LOPS)
+  "exams2lops",
+  "make_exams_write_lops",
+
+  ## mimicked WU exam server driver (NOPS)
+  "exams2nops",
+  "make_nops_template",
+  "nops_scan",
+  "nops_fix",
+  "nops_eval",
+  "nops_eval_write",
+  "nops_language",
+
+  ## Moodle driver
+  "exams2moodle",
+  "make_question_moodle",
+  "make_question_moodle23",
+  "moodle2exams",
+  "exams2wooclap",
+
+  ## ARSnova/Particify driver
+  "exams2arsnova",
+  "make_exams_write_arsnova",
+  "exams2particify",
+
+  ## Kahoot! driver
+  "exams2kahoot",
+
+  ## TCExam driver
+  "exams2tcexam",
+
+  ## TestVision driver
+  "exams2testvision",
+  "make_itembody_testvision",
+  "testvision2exams",
+
+  ## Grasple driver
+  "exams2grasple",
+  "make_exams_write_grasple",
+
+  ## Pandoc driver
+  "exams2pandoc"
+)
+
+S3method("print", "exams_metainfo")
+S3method("toLatex", "matrix")
+S3method("toLatex", "data.frame")
+S3method("plot", "stress")
+S3method("as.data.frame", "stress")
+S3method("print", "stress")
+S3method("summary", "stress")
+S3method("print", "stress.summary")
