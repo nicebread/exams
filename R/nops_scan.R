@@ -58,6 +58,8 @@ nops_scan <- function(
         cat(paste("Reading ", file, ".\n", sep = ""))
       }
     }
+
+    # here, ss is a b/w binary matrix of the pn
     ss <- try(trim_nops_scan(file, verbose = verbose & is.null(cores), minrot = minrot))
     if(inherits(ss, "try-error")) {
       if(verbose) cat(", ERROR")
@@ -65,6 +67,8 @@ nops_scan <- function(
     }
     
     if(verbose & is.null(cores)) cat(", extracting information")
+    
+    # be careful: here ss gets overwritten with the results
     ss <- if(!string) {
       ssty <- read_nops_digits(ss, "type")
       regextra <- as.numeric(substr(ssty, 1L, 1L)) # 0=regular; 1/2/3=regextra; 4/5/6=regextra+backup
@@ -83,16 +87,16 @@ nops_scan <- function(
         file,
         read_nops_digits(ss, "id"),
         if(regextra == 0L) read_nops_digits(ss, "scrambling") else "00",
-	ssty,
-	sbackup,
+	      ssty,
+	      sbackup,
         read_nops_registration(ss, threshold = threshold, size = size * 1.2, trim = trim, regextra = regextra), ## allow bigger size in registration
-        read_nops_answers(ss, threshold = threshold, size = size, trim = trim, n = if(is.null(n)) as.numeric(substr(ssty, 2L, 3L)) else n)
+        read_nops_answers(ss, threshold = threshold, size = size, trim = trim, n = if(is.null(n)) as.numeric(substr(ssty, 2L, 3L)) else n, file=file, , saveInspection=TRUE)
       ))
     } else {
       try(paste(
         file,
         read_nops_digits(ss, "id", adjust = TRUE),
-	read_nops_digits(ss, "type", adjust = TRUE),
+	      read_nops_digits(ss, "type", adjust = TRUE),
         substr(read_nops_answers(ss, threshold = threshold, size = size, trim = trim, n = 3L, adjust = TRUE), 1, 17)
       ))
     }
@@ -620,6 +624,7 @@ digit_regressors <- function(x, nrow = 7, ncol = 5)
 }
 
 ## classify digits 
+## x is a binary b/w matric of the png
 read_nops_digits <- function(x, type = c("type", "id", "scrambling"), adjust = FALSE)
 {
   ## adjustment for coordinates (e.g. for reading 2nd string page)
@@ -674,7 +679,7 @@ read_nops_digits <- function(x, type = c("type", "id", "scrambling"), adjust = F
   return(y)
 }
 
-read_nops_answers <- function(x, threshold = c(0.04, 0.42), size = 0.03, trim = 0.3, n = 45L, adjust = FALSE)
+read_nops_answers <- function(x, threshold = c(0.04, 0.42), size = 0.03, trim = 0.3, n = 45L, adjust = FALSE, file="default.png", saveInspection=TRUE)
 {
   ## adjustment for coordinates (e.g. for reading 2nd string page)
   if(identical(adjust, TRUE)) adjust <- c(0.4243, -0.50025)
@@ -692,17 +697,42 @@ read_nops_answers <- function(x, threshold = c(0.04, 0.42), size = 0.03, trim = 
   coord3 <- coord2 + cbind(rep(0, 5 * 15), 0.376 * 60/64)
   coord <- rbind(coord1, coord2, coord3)
 
-  ## ## zap numbers next to the boxes
-  ## subimage(x, c(0.7542,         0.0095), c(0.42, 0.019)) <- 0L
-  ## subimage(x, c(0.7542, 0.373 + 0.0095), c(0.42, 0.019)) <- 0L
-  ## subimage(x, c(0.7542, 0.723 + 0.0095), c(0.42, 0.019)) <- 0L
+  ## remove numbers left to the checkboxes (this changes the x matrix)
+  # subimage(x, c(0.7542,         0.0095), c(0.42, 0.019)) <- 0L
+  # subimage(x, c(0.7542, 0.373 + 0.0095), c(0.42, 0.019)) <- 0L
+  # subimage(x, c(0.7542, 0.723 + 0.0095), c(0.42, 0.019)) <- 0L
 
   y <- matrix(sapply(1:(n * 5L), function(i)
     has_mark(subimage(x, coord[i,] - adjust, size), threshold = threshold, trim = trim)), ncol = 5L, byrow = TRUE)
+  
+  # y_vec is y as a 1d vector, in the same order as the i loop below
+  y_vec <- as.vector(t(y))
+
+  if (saveInspection == TRUE) {
+    check_file <- paste0(get_image_folder(owd, file), "/check/check_", basename(file))
+    print(paste0("Saving an image for visual inspection in the `/check` subfolder: ", check_file))
+    x2 <- x  # make a copy of the binary png matrix
+    width=2  # linewidth, must be an even number
+    length=24 # length of the cross-line
+
+    for (i in seq_len(n * 5L)) {
+      center_x <- round(coord[i, 1] * nrow(x))
+      center_y <- round(coord[i, 2] * ncol(x))
+
+      if (y_vec[i] == 1) {
+        x2[(center_x-width/2):(center_x+width/2), (center_y - length):(center_y + length)] <- 3
+        x2[(center_x-length):(center_x+length), (center_y-width/2):(center_y+width/2)] <- 3
+      } 
+    }
+
+    iplot2(x2, file=check_file)
+  }
+  
+  
   rval <- paste(apply(y, 1, paste, collapse = ""), collapse = " ")
   if(n < 45L) rval <- paste(rval, paste(rep.int("00000", 45L - n), collapse = " "))
   return(rval)
-}
+  }
 
 read_nops_registration <- function(x, threshold = c(0.04, 0.42), size = 0.036, trim = 0.3, regextra = 0L)
 {
@@ -746,4 +776,41 @@ imageplot <- function(x, ...) {
   plot(0, 0, type = "n", xlab = "", ylab = "", axes = FALSE, xlim = c(0, 1), ylim = c(0, 1), ...)
   if(prod(dim(xcoord)) > 0L) rect(xcoord[,2L] - 1/d[2L], 1 - (xcoord[,1L] - 1/d[1L]),
     xcoord[,2L], 1 - xcoord[,1L], col = "black", border = "transparent") 
+}
+
+# Save a numeric raster image as png file; add some color mapping
+# 0 = white, 1 = black, 2 = darkgreen, 3 = red
+iplot2 <- function(x, file = NULL) {
+  # Color mapping
+  cols <- c("white", "black", "darkgreen", "red")
+  img <- as.raster(matrix(cols[x + 1L], nrow = nrow(x), ncol = ncol(x)))
+
+  if (!is.null(file)) {
+    # Expand ~ and ensure the directory exists (but don't try to create ".")
+    dir <- dirname(path.expand(file))
+    if (dir != "." && !dir.exists(dir)) {
+      dir.create(dir, recursive = TRUE, showWarnings = FALSE)
+    }
+
+    png(filename = file, width = ncol(x), height = nrow(x), units = "px")
+    on.exit(dev.off(), add = TRUE)  # close even on error
+  }
+
+  # Draw image
+  op <- par(mar = rep(0, 4))
+  on.exit(par(op), add = TRUE)
+  plot.new()
+  rasterImage(img, 0, 0, 1, 1, interpolate = FALSE)
+}
+
+
+#' Combines a working directory with the relative or absolute path of an image file
+#' # (we need this function to save the check_.png files in the same folder as the original image)
+get_image_folder <- function(owd, image) {
+  # If image is already absolute, just take its directory
+  if (grepl("^(/|[A-Za-z]:[/\\\\])", image)) {
+    return(dirname(image))
+  }
+  # Otherwise, join with owd
+  dirname(file.path(owd, image))
 }
