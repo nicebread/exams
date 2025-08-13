@@ -23,8 +23,9 @@ Full code example:
 ```r
 nops_scan(
     images = dir(pattern = "\\.PNG$|\\.png$",
-                 path = paste0("Statistik MSc/2025 SS/nops_scan/", v), full.names = TRUE),
-    dir = paste0("Statistik MSc/2025 SS/nops_scan/", v, "/"),
+                 path = "Statistik MSc/2025 SS/nops_scan/", 
+                 full.names = TRUE),
+    dir = "Statistik MSc/2025 SS/nops_scan/",
     rotate = FALSE, saveInspection = TRUE
   )
 ```
