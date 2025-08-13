@@ -1,11 +1,15 @@
 ## main function
+#' @param saveInspection Should a copy of the scanned exam be saved 
+#'                       that adds the has_mark() result? Will be saved at the same
+#'                       location as the original images, in the `/check` subfolder.
 nops_scan <- function(
   images = dir(pattern = "\\.PNG$|\\.png$|\\.PDF|\\.pdf$", path = dir, full.names = TRUE),
   file = NULL, dir = ".",
   verbose = TRUE, rotate = FALSE, cores = NULL, n = NULL,
   density = 300,
   size = 0.03, threshold = c(0.04, 0.42), trim = 0.3, minrot = 0.002,
-  string = FALSE)
+  string = FALSE,
+  saveInspection=TRUE)
 {
   ## required packages
   stopifnot(requireNamespace("png"))
@@ -90,7 +94,7 @@ nops_scan <- function(
 	      ssty,
 	      sbackup,
         read_nops_registration(ss, threshold = threshold, size = size * 1.2, trim = trim, regextra = regextra), ## allow bigger size in registration
-        read_nops_answers(ss, threshold = threshold, size = size, trim = trim, n = if(is.null(n)) as.numeric(substr(ssty, 2L, 3L)) else n, file=file, , saveInspection=TRUE)
+        read_nops_answers(ss, threshold = threshold, size = size, trim = trim, n = if(is.null(n)) as.numeric(substr(ssty, 2L, 3L)) else n, file=file, dir=dir, saveInspection=saveInspection)
       ))
     } else {
       try(paste(
@@ -679,7 +683,7 @@ read_nops_digits <- function(x, type = c("type", "id", "scrambling"), adjust = F
   return(y)
 }
 
-read_nops_answers <- function(x, threshold = c(0.04, 0.42), size = 0.03, trim = 0.3, n = 45L, adjust = FALSE, file="default.png", saveInspection=TRUE)
+read_nops_answers <- function(x, threshold = c(0.04, 0.42), size = 0.03, trim = 0.3, n = 45L, adjust = FALSE, file="default.png", saveInspection=TRUE, dir="")
 {
   ## adjustment for coordinates (e.g. for reading 2nd string page)
   if(identical(adjust, TRUE)) adjust <- c(0.4243, -0.50025)
@@ -709,7 +713,7 @@ read_nops_answers <- function(x, threshold = c(0.04, 0.42), size = 0.03, trim = 
   y_vec <- as.vector(t(y))
 
   if (saveInspection == TRUE) {
-    check_file <- paste0(get_image_folder(owd, file), "/check/check_", basename(file))
+    check_file <- paste0(get_image_folder(dir, file), "/check/check_", basename(file))
     print(paste0("Saving an image for visual inspection in the `/check` subfolder: ", check_file))
     x2 <- x  # make a copy of the binary png matrix
     width=2  # linewidth, must be an even number
@@ -806,11 +810,11 @@ iplot2 <- function(x, file = NULL) {
 
 #' Combines a working directory with the relative or absolute path of an image file
 #' # (we need this function to save the check_.png files in the same folder as the original image)
-get_image_folder <- function(owd, image) {
+get_image_folder <- function(wd, image) {
   # If image is already absolute, just take its directory
   if (grepl("^(/|[A-Za-z]:[/\\\\])", image)) {
     return(dirname(image))
   }
-  # Otherwise, join with owd
-  dirname(file.path(owd, image))
+  # Otherwise, join with wd
+  dirname(file.path(wd, image))
 }
